@@ -110,7 +110,7 @@ app.get('/cdn/:userID/:imageID', (req, res) => {
     res.sendFile(__dirname + '/images/'+req.params.userID+'/'+req.params.imageID);
 })
 
-app.delete('/api/v1/banner', ( req, res ) => {
+app.post('/api/v1/banner/remove', ( req, res ) => {
     res.header('Access-Control-Allow-Origin', '*');
     let userID = req.query.id;
 
