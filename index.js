@@ -35,12 +35,48 @@ app.post('/api/v1/banner', ( req, res ) => {
             fs.writeFileSync('config/'+userID+'.json', JSON.stringify({
                 "banner_url": "/cdn/"+userID+"/"+imageID+"."+format,
                 "id": userID,
+                "background_colour": null,
+                "foreground_colour": null,
+                "has_shadow": false,
                 "ok": true
             }))
 
             let buff = await dataUriToBufer(data.file);
             fs.writeFileSync('images/'+userID+'/'+imageID+'.'+format, buff);
 
+            res.send({ ok: true });
+        } catch(e){
+            res.send({ ok: false, error: "Invaild Data" });
+        }
+    })
+
+    req.on('error', () => {
+        res.send({ ok: false, error: "500 Interval Server Error" });
+    })
+})
+
+app.post('/api/v1/profile', ( req, res ) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    let userID = req.query.id;
+
+    if(!userID)
+        return res.send({ ok: false, error: "No UserID In Request." });
+
+    let data = '';
+    req.on('data', chunk => data += chunk.toString());
+
+    req.on('end', async () => {
+        try{
+            data = JSON.parse(data);
+
+            let userConfig = JSON.parse(fs.readFileSync("config/"+userID+".json").toString());
+            userConfig.banner_url = null;
+
+            if(data.background_colour)userConfig.background_colour = data.background_colour;
+            if(data.foreground_colour)userConfig.foreground_colour = data.foreground_colour;
+            if(data.has_shadow)userConfig.has_shadow = data.has_shadow;
+
+            fs.writeFileSync("config/"+userID+".json", JSON.stringify(userConfig));
             res.send({ ok: true });
         } catch(e){
             res.send({ ok: false, error: "Invaild Data" });
@@ -72,6 +108,23 @@ app.get('/cdn/:userID/:imageID', (req, res) => {
         return res.send({ ok: false, error: "404 Image not found" })
 
     res.sendFile(__dirname + '/images/'+req.params.userID+'/'+req.params.imageID);
+})
+
+app.delete('/api/v1/banner', ( req, res ) => {
+    res.header('Access-Control-Allow-Origin', '*');
+    let userID = req.query.id;
+
+    if(!userID)
+        return res.send({ ok: false, error: "No UserID In Request." });
+
+    if(!fs.existsSync("config/"+userID+".json"))
+        return res.send({ ok: false, error: "404 User not found" });
+
+    let userConfig = JSON.parse(fs.readFileSync("config/"+userID+".json").toString());
+    userConfig.banner_url = null;
+
+    fs.writeFileSync("config/"+userID+".json", JSON.stringify(userConfig));
+    res.send({ ok: true });
 })
 
 app.listen(8090);
